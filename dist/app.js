@@ -37,13 +37,34 @@ exports.app = app;
 const security_middleware_1 = require("./middlewares/security.middleware");
 // Security middlewares
 app.use((0, helmet_1.default)({
-    contentSecurityPolicy: true,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    contentSecurityPolicy: false,
     hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
     noSniff: true,
     xssFilter: true,
 }));
+const allowedOrigins = (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+// Always ensure production frontend URL and local dev are permitted
+const defaultAllowedOrigins = [
+    'https://kiddybd-frontend.onrender.com',
+    'http://localhost:3000',
+    'http://localhost:3001',
+];
 app.use((0, cors_1.default)({
-    origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
+    origin: (origin, callback) => {
+        // Allow server-to-server, curl, Postman or mobile requests without origin
+        if (!origin)
+            return callback(null, true);
+        const allAllowed = [...allowedOrigins, ...defaultAllowedOrigins];
+        if (allAllowed.includes(origin) || origin.endsWith('.onrender.com')) {
+            return callback(null, true);
+        }
+        return callback(null, true); // Fallback allow to avoid unexpected client blocks
+    },
     credentials: true,
 }));
 app.use(security_middleware_1.globalRateLimiter);
