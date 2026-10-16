@@ -4,6 +4,7 @@ import { userService } from './user.service';
 export const getProfile = async (req: Request, res: Response) => {
   const user = await userService.getProfile(req.user!.userId);
   res.status(200).json({
+    success: true,
     status: 'success',
     data: { user },
   });
@@ -12,8 +13,10 @@ export const getProfile = async (req: Request, res: Response) => {
 export const updateProfile = async (req: Request, res: Response) => {
   const user = await userService.updateProfile(req.user!.userId, req.body);
   res.status(200).json({
+    success: true,
     status: 'success',
     data: { user },
+    message: 'Profile updated successfully',
   });
 };
 

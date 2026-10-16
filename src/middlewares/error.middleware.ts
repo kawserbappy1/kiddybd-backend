@@ -44,17 +44,24 @@ export const errorMiddleware = (
 
   // Unhandled errors
   logger.error(`[INTERNAL_ERROR] ${err.message}`, {
-    stack: env.NODE_ENV === 'development' ? err.stack : undefined,
+    stack: err.stack,
     method: req.method,
     path: req.path,
   });
 
+  const isPrismaError = (err as any).code?.startsWith?.('P');
+  let clientMessage = err.message || 'Internal server error';
+  if ((err as any).code === 'P2002') {
+    const target = ((err as any).meta?.target || []).join(', ');
+    clientMessage = `Duplicate entry: A record with this ${target || 'field'} already exists.`;
+  }
+
   res.status(500).json({
     success: false,
-    message: 'Internal server error',
+    message: clientMessage,
     error: {
-      code: 'INTERNAL_ERROR',
-      details: env.NODE_ENV === 'development' ? [err.message] : []
+      code: (err as any).code || 'INTERNAL_ERROR',
+      details: [err.message]
     }
   });
 };

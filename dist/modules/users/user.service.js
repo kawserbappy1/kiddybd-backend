@@ -1,8 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.userService = exports.UserService = void 0;
 const prisma_service_1 = require("../../database/prisma.service");
 const errors_1 = require("../../common/errors");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 class UserService {
     async getProfile(userId) {
         const user = await prisma_service_1.prisma.user.findUnique({
@@ -35,24 +39,32 @@ class UserService {
         if (data.avatarUrl !== undefined)
             updateData.avatarUrl = data.avatarUrl;
         if (data.password) {
-            const bcrypt = require('bcryptjs');
-            updateData.passwordHash = await bcrypt.hash(data.password, 10);
+            updateData.passwordHash = await bcryptjs_1.default.hash(data.password, 10);
         }
-        const updatedUser = await prisma_service_1.prisma.user.update({
-            where: { id: userId },
-            data: updateData,
-            select: {
-                id: true,
-                name: true,
-                phone: true,
-                email: true,
-                avatarUrl: true,
-                role: true,
-                status: true,
-                createdAt: true,
+        try {
+            const updatedUser = await prisma_service_1.prisma.user.update({
+                where: { id: userId },
+                data: updateData,
+                select: {
+                    id: true,
+                    name: true,
+                    phone: true,
+                    email: true,
+                    avatarUrl: true,
+                    role: true,
+                    status: true,
+                    createdAt: true,
+                }
+            });
+            return updatedUser;
+        }
+        catch (err) {
+            if (err.code === 'P2002') {
+                const target = (err.meta?.target || []).join(', ');
+                throw new errors_1.AppError(`This ${target || 'email or phone number'} is already associated with another account.`, 409, 'CONFLICT');
             }
-        });
-        return updatedUser;
+            throw err;
+        }
     }
     async getAddresses(userId) {
         return prisma_service_1.prisma.address.findMany({

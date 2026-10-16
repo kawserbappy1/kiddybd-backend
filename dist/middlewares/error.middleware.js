@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.errorMiddleware = void 0;
 const errors_1 = require("../common/errors");
-const env_1 = require("../config/env");
 const logger_1 = require("../config/logger");
 // Remove sensitive data from log details
 const sanitizeDetails = (details) => {
@@ -38,16 +37,22 @@ const errorMiddleware = (err, req, res, _next) => {
     }
     // Unhandled errors
     logger_1.logger.error(`[INTERNAL_ERROR] ${err.message}`, {
-        stack: env_1.env.NODE_ENV === 'development' ? err.stack : undefined,
+        stack: err.stack,
         method: req.method,
         path: req.path,
     });
+    const isPrismaError = err.code?.startsWith?.('P');
+    let clientMessage = err.message || 'Internal server error';
+    if (err.code === 'P2002') {
+        const target = (err.meta?.target || []).join(', ');
+        clientMessage = `Duplicate entry: A record with this ${target || 'field'} already exists.`;
+    }
     res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: clientMessage,
         error: {
-            code: 'INTERNAL_ERROR',
-            details: env_1.env.NODE_ENV === 'development' ? [err.message] : []
+            code: err.code || 'INTERNAL_ERROR',
+            details: [err.message]
         }
     });
 };

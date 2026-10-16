@@ -5,6 +5,7 @@ const user_service_1 = require("./user.service");
 const getProfile = async (req, res) => {
     const user = await user_service_1.userService.getProfile(req.user.userId);
     res.status(200).json({
+        success: true,
         status: 'success',
         data: { user },
     });
@@ -13,8 +14,10 @@ exports.getProfile = getProfile;
 const updateProfile = async (req, res) => {
     const user = await user_service_1.userService.updateProfile(req.user.userId, req.body);
     res.status(200).json({
+        success: true,
         status: 'success',
         data: { user },
+        message: 'Profile updated successfully',
     });
 };
 exports.updateProfile = updateProfile;

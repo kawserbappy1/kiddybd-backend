@@ -811,22 +811,31 @@ class AdminService {
         if (password) {
             updateData.passwordHash = await bcryptjs_1.default.hash(password, 10);
         }
-        const updated = await prisma_service_1.prisma.user.update({
-            where: { id: userId },
-            data: updateData,
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                avatarUrl: true,
-                role: true,
-                status: true,
-                createdAt: true,
-                updatedAt: true,
-            },
-        });
-        return updated;
+        try {
+            const updated = await prisma_service_1.prisma.user.update({
+                where: { id: userId },
+                data: updateData,
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                    avatarUrl: true,
+                    role: true,
+                    status: true,
+                    createdAt: true,
+                    updatedAt: true,
+                },
+            });
+            return updated;
+        }
+        catch (err) {
+            if (err.code === 'P2002') {
+                const target = (err.meta?.target || []).join(', ');
+                throw new errors_1.AppError(`This ${target || 'email or phone number'} is already associated with another user.`, 409, 'CONFLICT');
+            }
+            throw err;
+        }
     }
     async getAuditLogs(query) {
         const limit = Number(query?.limit) || 50;

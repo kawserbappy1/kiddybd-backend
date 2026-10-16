@@ -1,5 +1,6 @@
 import { prisma } from '../../database/prisma.service';
-import { NotFoundError } from '../../common/errors';
+import { NotFoundError, AppError } from '../../common/errors';
+import bcrypt from 'bcryptjs';
 
 export class UserService {
   async getProfile(userId: string) {
@@ -41,26 +42,36 @@ export class UserService {
     if (data.phone !== undefined) updateData.phone = data.phone;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
     if (data.password) {
-      const bcrypt = require('bcryptjs');
       updateData.passwordHash = await bcrypt.hash(data.password, 10);
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        email: true,
-        avatarUrl: true,
-        role: true,
-        status: true,
-        createdAt: true,
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true,
+          avatarUrl: true,
+          role: true,
+          status: true,
+          createdAt: true,
+        }
+      });
+      return updatedUser;
+    } catch (err: any) {
+      if (err.code === 'P2002') {
+        const target = (err.meta?.target || []).join(', ');
+        throw new AppError(
+          `This ${target || 'email or phone number'} is already associated with another account.`,
+          409,
+          'CONFLICT'
+        );
       }
-    });
-
-    return updatedUser;
+      throw err;
+    }
   }
 
   async getAddresses(userId: string) {
