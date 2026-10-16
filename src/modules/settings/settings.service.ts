@@ -7,6 +7,7 @@ export interface SystemSettingsPayload {
   footerLogoUrl?: string;
   footerContent?: string;
   contactPhone?: string;
+  contactPhoneSecondary?: string;
   contactEmail?: string;
   contactAddress?: string;
   socialFacebook?: string;
@@ -25,6 +26,7 @@ const DEFAULT_SETTINGS: SystemSettingsPayload = {
   footerContent:
     'Quality products for every stage of childhood. Because happy kids build a brighter tomorrow.',
   contactPhone: '+880 1893-590140',
+  contactPhoneSecondary: '+880 1729-993873',
   contactEmail: 'kiddybd1@gmail.com',
   contactAddress: 'House 12, Road 4, Block-C, Banasree, Dhaka - 1219, Bangladesh',
   socialFacebook: 'https://www.facebook.com/kiddybd1',
