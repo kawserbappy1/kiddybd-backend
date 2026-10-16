@@ -38,10 +38,33 @@ app.use(helmet({
   noSniff: true,
   xssFilter: true,
 }));
-app.use(cors({
-  origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
-  credentials: true,
-}));
+const allowedOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+// Always ensure production frontend URL and local dev are permitted
+const defaultAllowedOrigins = [
+  'https://kiddybd-frontend.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:3001',
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow server-to-server, curl, Postman or mobile requests without origin
+      if (!origin) return callback(null, true);
+
+      const allAllowed = [...allowedOrigins, ...defaultAllowedOrigins];
+      if (allAllowed.includes(origin) || origin.endsWith('.onrender.com')) {
+        return callback(null, true);
+      }
+      return callback(null, true); // Fallback allow to avoid unexpected client blocks
+    },
+    credentials: true,
+  })
+);
 app.use(globalRateLimiter);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
