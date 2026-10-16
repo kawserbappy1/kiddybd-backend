@@ -24,6 +24,7 @@ import { wishlistRoutes } from './modules/wishlist/wishlist.routes';
 import { notificationRoutes } from './modules/notifications/notification.routes';
 import { adminRoutes } from './modules/admin/admin.routes';
 import { analyticsRoutes } from './modules/analytics/analytics.routes';
+import { settingsRoutes } from './modules/settings/settings.routes';
 import { setupSwagger } from './docs/swagger';
 
 const app = express();
@@ -96,6 +97,7 @@ app.use('/api/v1', reviewRoutes);
 app.use('/api/v1', couponRoutes);
 app.use('/api/v1', wishlistRoutes);
 app.use('/api/v1', notificationRoutes);
+app.use('/api/v1', settingsRoutes);
 
 app.get('/', (req, res) => {
   res.status(200).json({

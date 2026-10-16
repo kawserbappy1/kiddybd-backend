@@ -30,6 +30,7 @@ const wishlist_routes_1 = require("./modules/wishlist/wishlist.routes");
 const notification_routes_1 = require("./modules/notifications/notification.routes");
 const admin_routes_1 = require("./modules/admin/admin.routes");
 const analytics_routes_1 = require("./modules/analytics/analytics.routes");
+const settings_routes_1 = require("./modules/settings/settings.routes");
 const swagger_1 = require("./docs/swagger");
 const app = (0, express_1.default)();
 exports.app = app;
@@ -94,6 +95,7 @@ app.use('/api/v1', review_routes_1.reviewRoutes);
 app.use('/api/v1', coupon_routes_1.couponRoutes);
 app.use('/api/v1', wishlist_routes_1.wishlistRoutes);
 app.use('/api/v1', notification_routes_1.notificationRoutes);
+app.use('/api/v1', settings_routes_1.settingsRoutes);
 app.get('/', (req, res) => {
     res.status(200).json({
         status: 'success',
