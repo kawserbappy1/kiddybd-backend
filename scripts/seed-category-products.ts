@@ -1,5 +1,5 @@
-import { catalogService } from './src/modules/catalog/catalog.service';
-import { prisma } from './src/database/prisma.service';
+import { catalogService } from '../src/modules/catalog/catalog.service';
+import { prisma } from '../src/database/prisma.service';
 
 async function seedProductsPerCategory() {
   console.log('--- Starting Products Seeding for Each Category ---');
