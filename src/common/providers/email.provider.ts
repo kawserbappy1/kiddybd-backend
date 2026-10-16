@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 import { env } from '../../config/env';
 
 export interface EmailProvider {
@@ -12,9 +13,9 @@ export class MockEmailProvider implements EmailProvider {
 }
 
 export class NodemailerEmailProvider implements EmailProvider {
-  private transporter: nodemailer.Transporter | null = null;
+  private transporter: Transporter | null = null;
 
-  private getTransporter(): nodemailer.Transporter | null {
+  private getTransporter(): Transporter | null {
     if (this.transporter) return this.transporter;
 
     const user = env.SMTP_USER;

@@ -1,19 +1,20 @@
-import admin from 'firebase-admin';
+import * as admin from 'firebase-admin';
 
 let firebaseAdminInitialized = false;
 
-export function initFirebaseAdmin(): typeof admin | null {
+export function initFirebaseAdmin(): any {
   if (firebaseAdminInitialized) return admin;
 
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const firebaseApp = admin as any;
 
   if (projectId && clientEmail && privateKey) {
     try {
-      if (!admin.apps.length) {
-        admin.initializeApp({
-          credential: admin.credential.cert({
+      if (!firebaseApp.apps?.length) {
+        firebaseApp.initializeApp({
+          credential: firebaseApp.credential.cert({
             projectId,
             clientEmail,
             privateKey,
@@ -29,8 +30,8 @@ export function initFirebaseAdmin(): typeof admin | null {
   } else {
     // If not full service account, try default if available
     try {
-      if (!admin.apps.length) {
-        admin.initializeApp({
+      if (!firebaseApp.apps?.length) {
+        firebaseApp.initializeApp({
           projectId: projectId || 'kiddybd',
         });
       }

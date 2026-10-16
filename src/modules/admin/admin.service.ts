@@ -223,7 +223,7 @@ export class AdminService {
       },
     });
 
-    const trackingId = liveTrackingId;
+    const trackingId = liveTrackingId || `${courierName.slice(0, 3).toUpperCase()}-${Math.floor(100000 + Math.random() * 900000)}`;
 
     // Upsert shipment for this order
     const shipment = await prisma.shipment.upsert({
