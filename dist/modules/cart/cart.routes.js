@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.cartRoutes = void 0;
+const express_1 = require("express");
+const cart_controller_1 = require("./cart.controller");
+const validate_middleware_1 = require("../../middlewares/validate.middleware");
+const auth_middleware_1 = require("../../middlewares/auth.middleware");
+const cart_schema_1 = require("./cart.schema");
+const catchAsync_1 = require("../../common/utils/catchAsync");
+const router = (0, express_1.Router)();
+exports.cartRoutes = router;
+router.use(auth_middleware_1.authenticate);
+router.get('/', (0, catchAsync_1.catchAsync)(cart_controller_1.cartController.getCart));
+router.post('/items', (0, validate_middleware_1.validateRequest)(cart_schema_1.addItemSchema), (0, catchAsync_1.catchAsync)(cart_controller_1.cartController.addItem));
+router.patch('/items/:id', (0, validate_middleware_1.validateRequest)(cart_schema_1.updateItemSchema), (0, catchAsync_1.catchAsync)(cart_controller_1.cartController.updateItem));
+router.delete('/items/:id', (0, validate_middleware_1.validateRequest)(cart_schema_1.itemIdSchema), (0, catchAsync_1.catchAsync)(cart_controller_1.cartController.removeItem));
+router.delete('/', (0, catchAsync_1.catchAsync)(cart_controller_1.cartController.clearCart));

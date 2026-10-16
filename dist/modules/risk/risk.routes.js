@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.riskAdminRoutes = void 0;
+const express_1 = require("express");
+const risk_controller_1 = require("./risk.controller");
+const auth_middleware_1 = require("../../middlewares/auth.middleware");
+const rbac_middleware_1 = require("../../middlewares/rbac.middleware");
+const catchAsync_1 = require("../../common/utils/catchAsync");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.authenticate);
+router.use((0, rbac_middleware_1.authorize)(['SUPER_ADMIN']));
+router.get('/risk/:orderId', (0, catchAsync_1.catchAsync)(risk_controller_1.riskController.getOrderRisk));
+router.get('/cod-config', (0, catchAsync_1.catchAsync)(risk_controller_1.riskController.getCODConfig));
+router.patch('/cod-config', (0, catchAsync_1.catchAsync)(risk_controller_1.riskController.updateCODConfig));
+exports.riskAdminRoutes = router;
