@@ -5,6 +5,7 @@ const zod_1 = require("zod");
 exports.updateProfileSchema = zod_1.z.object({
     body: zod_1.z.object({
         name: zod_1.z.string().min(2, 'Name must be at least 2 characters').max(50, 'Name must not exceed 50 characters').optional(),
+        avatarUrl: zod_1.z.string().url('Invalid image URL').nullable().optional(),
     }),
 });
 exports.createAddressSchema = zod_1.z.object({

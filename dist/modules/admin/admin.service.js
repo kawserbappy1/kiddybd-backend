@@ -714,6 +714,7 @@ class AdminService {
                 name: true,
                 email: true,
                 phone: true,
+                avatarUrl: true,
                 role: true,
                 status: true,
                 createdAt: true,
@@ -742,6 +743,9 @@ class AdminService {
             if (data.phone) {
                 updateData.phone = data.phone;
             }
+            if (data.avatarUrl) {
+                updateData.avatarUrl = data.avatarUrl;
+            }
             if (data.password) {
                 updateData.passwordHash = await bcryptjs_1.default.hash(data.password, 10);
             }
@@ -753,6 +757,7 @@ class AdminService {
                     name: true,
                     email: true,
                     phone: true,
+                    avatarUrl: true,
                     role: true,
                     status: true,
                     createdAt: true,
@@ -767,6 +772,7 @@ class AdminService {
                 name: data.name,
                 email: data.email,
                 phone: data.phone || null,
+                avatarUrl: data.avatarUrl || null,
                 passwordHash,
                 role: data.role,
                 status: 'ACTIVE',
@@ -776,6 +782,7 @@ class AdminService {
                 name: true,
                 email: true,
                 phone: true,
+                avatarUrl: true,
                 role: true,
                 status: true,
                 createdAt: true,
@@ -784,14 +791,23 @@ class AdminService {
         });
         return newUser;
     }
-    async updateAdminRole(userId, role, status, password) {
+    async updateAdminRole(userId, role, status, password, data) {
         const user = await prisma_service_1.prisma.user.findUnique({ where: { id: userId } });
         if (!user)
             throw new errors_1.AppError('Admin user not found', 404, 'NOT_FOUND');
-        const updateData = {
-            role,
-            ...(status ? { status } : {}),
-        };
+        const updateData = {};
+        if (role)
+            updateData.role = role;
+        if (status)
+            updateData.status = status;
+        if (data?.name)
+            updateData.name = data.name;
+        if (data?.email)
+            updateData.email = data.email;
+        if (data?.phone !== undefined)
+            updateData.phone = data.phone;
+        if (data?.avatarUrl !== undefined)
+            updateData.avatarUrl = data.avatarUrl;
         if (password) {
             updateData.passwordHash = await bcryptjs_1.default.hash(password, 10);
         }
@@ -803,6 +819,7 @@ class AdminService {
                 name: true,
                 email: true,
                 phone: true,
+                avatarUrl: true,
                 role: true,
                 status: true,
                 createdAt: true,

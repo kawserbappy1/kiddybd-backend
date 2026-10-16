@@ -12,6 +12,7 @@ class UserService {
                 name: true,
                 phone: true,
                 email: true,
+                avatarUrl: true,
                 role: true,
                 status: true,
                 createdAt: true,
@@ -24,19 +25,23 @@ class UserService {
         return user;
     }
     async updateProfile(userId, data) {
-        // Only name can be updated by the client here (phone/email/role updates are restricted)
+        const updateData = {};
+        if (data.name !== undefined)
+            updateData.name = data.name;
+        if (data.avatarUrl !== undefined)
+            updateData.avatarUrl = data.avatarUrl;
         const updatedUser = await prisma_service_1.prisma.user.update({
             where: { id: userId },
-            data: {
-                name: data.name,
-            },
+            data: updateData,
             select: {
                 id: true,
                 name: true,
                 phone: true,
                 email: true,
+                avatarUrl: true,
                 role: true,
                 status: true,
+                createdAt: true,
             }
         });
         return updatedUser;

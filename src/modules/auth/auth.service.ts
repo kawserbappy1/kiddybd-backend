@@ -109,7 +109,9 @@ export class AuthService {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      avatarUrl: user.avatarUrl,
       role: user.role,
+      status: user.status,
       createdAt: user.createdAt.toISOString(),
     };
   }
@@ -218,6 +220,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        avatarUrl: user.avatarUrl,
         role: user.role,
         status: user.status,
         createdAt: user.createdAt.toISOString(),

@@ -785,6 +785,7 @@ export class AdminService {
         name: true,
         email: true,
         phone: true,
+        avatarUrl: true,
         role: true,
         status: true,
         createdAt: true,
@@ -802,6 +803,7 @@ export class AdminService {
     phone?: string;
     role: Role;
     password?: string;
+    avatarUrl?: string;
   }) {
     const existing = await prisma.user.findFirst({
       where: {
@@ -822,6 +824,9 @@ export class AdminService {
       if (data.phone) {
         updateData.phone = data.phone;
       }
+      if (data.avatarUrl) {
+        updateData.avatarUrl = data.avatarUrl;
+      }
       if (data.password) {
         updateData.passwordHash = await bcrypt.hash(data.password, 10);
       }
@@ -833,6 +838,7 @@ export class AdminService {
           name: true,
           email: true,
           phone: true,
+          avatarUrl: true,
           role: true,
           status: true,
           createdAt: true,
@@ -849,6 +855,7 @@ export class AdminService {
         name: data.name,
         email: data.email,
         phone: data.phone || null,
+        avatarUrl: data.avatarUrl || null,
         passwordHash,
         role: data.role,
         status: 'ACTIVE',
@@ -858,6 +865,7 @@ export class AdminService {
         name: true,
         email: true,
         phone: true,
+        avatarUrl: true,
         role: true,
         status: true,
         createdAt: true,
@@ -868,14 +876,23 @@ export class AdminService {
     return newUser;
   }
 
-  async updateAdminRole(userId: string, role: Role, status?: UserStatus, password?: string) {
+  async updateAdminRole(
+    userId: string,
+    role?: Role,
+    status?: UserStatus,
+    password?: string,
+    data?: { name?: string; email?: string; phone?: string; avatarUrl?: string }
+  ) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new AppError('Admin user not found', 404, 'NOT_FOUND');
 
-    const updateData: any = {
-      role,
-      ...(status ? { status } : {}),
-    };
+    const updateData: any = {};
+    if (role) updateData.role = role;
+    if (status) updateData.status = status;
+    if (data?.name) updateData.name = data.name;
+    if (data?.email) updateData.email = data.email;
+    if (data?.phone !== undefined) updateData.phone = data.phone;
+    if (data?.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
     if (password) {
       updateData.passwordHash = await bcrypt.hash(password, 10);
     }
@@ -888,6 +905,7 @@ export class AdminService {
         name: true,
         email: true,
         phone: true,
+        avatarUrl: true,
         role: true,
         status: true,
         createdAt: true,

@@ -14,7 +14,15 @@ const router = Router();
 router.post(
   '/upload',
   authenticate,
-  authorize([Role.INVENTORY_MANAGER, Role.CONTENT_MANAGER, Role.ADMIN, Role.SUPER_ADMIN]),
+  authorize([
+    Role.SUPER_ADMIN,
+    Role.ADMIN,
+    Role.ORDER_MANAGER,
+    Role.INVENTORY_MANAGER,
+    Role.CONTENT_MANAGER,
+    Role.CUSTOMER_SUPPORT,
+    Role.FINANCE_MANAGER,
+  ]),
   uploadSingleImage,
   catchAsync(catalogController.uploadImage)
 );

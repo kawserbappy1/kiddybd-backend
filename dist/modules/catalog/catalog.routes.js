@@ -44,7 +44,15 @@ const audit_log_middleware_1 = require("../../middlewares/audit-log.middleware")
 const client_1 = require("@prisma/client");
 const router = (0, express_1.Router)();
 // Upload image route (Products, Avatars) via Multer & Cloudinary
-router.post('/upload', auth_middleware_1.authenticate, (0, rbac_middleware_1.authorize)([client_1.Role.INVENTORY_MANAGER, client_1.Role.CONTENT_MANAGER, client_1.Role.ADMIN, client_1.Role.SUPER_ADMIN]), cloudinary_service_1.uploadSingleImage, (0, catchAsync_1.catchAsync)(catalogController.uploadImage));
+router.post('/upload', auth_middleware_1.authenticate, (0, rbac_middleware_1.authorize)([
+    client_1.Role.SUPER_ADMIN,
+    client_1.Role.ADMIN,
+    client_1.Role.ORDER_MANAGER,
+    client_1.Role.INVENTORY_MANAGER,
+    client_1.Role.CONTENT_MANAGER,
+    client_1.Role.CUSTOMER_SUPPORT,
+    client_1.Role.FINANCE_MANAGER,
+]), cloudinary_service_1.uploadSingleImage, (0, catchAsync_1.catchAsync)(catalogController.uploadImage));
 // Public catalog routes
 router.get('/products', (0, catchAsync_1.catchAsync)(catalogController.listProducts));
 router.get('/products/:slug', (0, catchAsync_1.catchAsync)(catalogController.getProductBySlug));

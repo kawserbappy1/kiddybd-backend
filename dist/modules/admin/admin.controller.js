@@ -177,9 +177,9 @@ class AdminController {
     };
     updateAdminRole = async (req, res, next) => {
         try {
-            const { role, status, password } = req.body;
-            const user = await this.adminService.updateAdminRole(req.params.id, role, status, password);
-            res.status(200).json({ success: true, data: user, message: 'Admin permissions updated successfully' });
+            const { role, status, password, name, email, phone, avatarUrl } = req.body;
+            const user = await this.adminService.updateAdminRole(req.params.id, role, status, password, { name, email, phone, avatarUrl });
+            res.status(200).json({ success: true, data: user, message: 'Admin details updated successfully' });
         }
         catch (error) {
             next(error);

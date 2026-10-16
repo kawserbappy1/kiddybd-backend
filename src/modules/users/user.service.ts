@@ -10,6 +10,7 @@ export class UserService {
         name: true,
         phone: true,
         email: true,
+        avatarUrl: true,
         role: true,
         status: true,
         createdAt: true,
@@ -24,20 +25,23 @@ export class UserService {
     return user;
   }
 
-  async updateProfile(userId: string, data: { name?: string }) {
-    // Only name can be updated by the client here (phone/email/role updates are restricted)
+  async updateProfile(userId: string, data: { name?: string; avatarUrl?: string | null }) {
+    const updateData: any = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: {
-        name: data.name,
-      },
+      data: updateData,
       select: {
         id: true,
         name: true,
         phone: true,
         email: true,
+        avatarUrl: true,
         role: true,
         status: true,
+        createdAt: true,
       }
     });
 
