@@ -28,8 +28,16 @@ class UserService {
         const updateData = {};
         if (data.name !== undefined)
             updateData.name = data.name;
+        if (data.email !== undefined)
+            updateData.email = data.email;
+        if (data.phone !== undefined)
+            updateData.phone = data.phone;
         if (data.avatarUrl !== undefined)
             updateData.avatarUrl = data.avatarUrl;
+        if (data.password) {
+            const bcrypt = require('bcryptjs');
+            updateData.passwordHash = await bcrypt.hash(data.password, 10);
+        }
         const updatedUser = await prisma_service_1.prisma.user.update({
             where: { id: userId },
             data: updateData,

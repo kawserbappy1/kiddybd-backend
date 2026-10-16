@@ -25,10 +25,25 @@ export class UserService {
     return user;
   }
 
-  async updateProfile(userId: string, data: { name?: string; avatarUrl?: string | null }) {
+  async updateProfile(
+    userId: string,
+    data: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      password?: string;
+      avatarUrl?: string | null;
+    }
+  ) {
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.phone !== undefined) updateData.phone = data.phone;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
+    if (data.password) {
+      const bcrypt = require('bcryptjs');
+      updateData.passwordHash = await bcrypt.hash(data.password, 10);
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
