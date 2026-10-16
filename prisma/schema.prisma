@@ -1,0 +1,883 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Global Enums
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  ORDER_MANAGER
+  INVENTORY_MANAGER
+  CUSTOMER_SUPPORT
+  CONTENT_MANAGER
+  FINANCE_MANAGER
+  CUSTOMER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+  DELETED
+}
+
+enum AddressValidationStatus {
+  VALID
+  NEEDS_REVIEW
+  INCOMPLETE
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  OUT_OF_STOCK
+  ARCHIVED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum OrderStatus {
+  PENDING
+  RISK_REVIEW
+  VERIFICATION_REQUIRED
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  RTO
+}
+
+enum OrderVerificationType {
+  OTP
+  SMS_LINK
+  MANUAL_CALL
+  ADVANCE_PAYMENT
+}
+
+enum OrderVerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  EXPIRED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum ShipmentStatus {
+  PENDING
+  PICKED_UP
+  IN_TRANSIT
+  REACHED_LOCAL_HUB
+  OUT_FOR_DELIVERY
+  DELIVERED
+  RETURNED
+}
+
+enum RTOReason {
+  CUSTOMER_UNAVAILABLE
+  WRONG_ADDRESS
+  PHONE_UNREACHABLE
+  CUSTOMER_REFUSED
+  CUSTOMER_CANCELLED
+  COURIER_ISSUE
+  OTHER
+}
+
+enum ReturnStatus {
+  REQUESTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PICKUP_SCHEDULED
+  RECEIVED
+  QUALITY_CHECK
+  COMPLETED
+  CANCELLED
+}
+
+enum ReturnReason {
+  WRONG_PRODUCT
+  DAMAGED
+  DEFECTIVE
+  NOT_AS_EXPECTED
+  MISSING_PARTS
+  SIZE_ISSUE
+  CHANGE_OF_MIND
+  OTHER
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+  FREE_DELIVERY
+}
+
+enum InventoryReservationStatus {
+  ACTIVE
+  RELEASED
+  COMMITTED
+  EXPIRED
+}
+
+// 2. Entities
+
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  phone           String?    @unique
+  email           String?    @unique
+  googleId        String?    @unique
+  name            String
+  passwordHash    String?
+  role            Role       @default(CUSTOMER)
+  status          UserStatus @default(ACTIVE)
+  phoneVerifiedAt DateTime?
+  emailVerifiedAt DateTime?
+  googleLinkedAt  DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  addresses       Address[]
+  reputation      CustomerReputation?
+  refreshTokens   RefreshToken[]
+  orders          Order[]
+  cart            Cart?
+  wishlist        Wishlist?
+  reviews         Review[]
+  couponUsages    CouponUsage[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+  idempotencyKeys IdempotencyKey[]
+
+  @@index([phone])
+  @@index([email])
+  @@index([googleId])
+}
+
+model RefreshToken {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  tokenHash         String
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  replacedByTokenId String?   @db.Uuid
+  createdAt         DateTime  @default(now())
+  ip                String
+  userAgent         String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CustomerReputation {
+  id                  String    @id @default(uuid()) @db.Uuid
+  userId              String    @unique @db.Uuid
+  totalOrders         Int       @default(0)
+  completedOrders     Int       @default(0)
+  cancelledOrders     Int       @default(0)
+  rtoOrders           Int       @default(0)
+  returnedOrders      Int       @default(0)
+  totalSpent          Decimal   @default(0) @db.Decimal(10, 2)
+  deliverySuccessRate Decimal   @default(100) @db.Decimal(5, 2)
+  rtoRate             Decimal   @default(0) @db.Decimal(5, 2)
+  cancelRate          Decimal   @default(0) @db.Decimal(5, 2)
+  returnRate          Decimal   @default(0) @db.Decimal(5, 2)
+  lastOrderAt         DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Address {
+  id               String                  @id @default(uuid()) @db.Uuid
+  userId           String                  @db.Uuid
+  name             String
+  phone            String
+  division         String
+  district         String
+  upazila          String
+  area             String
+  addressLine      String
+  landmark         String?
+  postalCode       String?
+  latitude         Decimal?                @db.Decimal(10, 8)
+  longitude        Decimal?                @db.Decimal(11, 8)
+  isDefault        Boolean                 @default(false)
+  validationStatus AddressValidationStatus @default(INCOMPLETE)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id       String  @id @default(uuid()) @db.Uuid
+  name     String
+  slug     String  @unique
+  parentId String? @db.Uuid
+
+  parent   Category?        @relation("SubCategories", fields: [parentId], references: [id])
+  children Category[]       @relation("SubCategories")
+  products Product[]
+  coupons  CouponCategory[]
+}
+
+model Brand {
+  id       String    @id @default(uuid()) @db.Uuid
+  name     String
+  slug     String    @unique
+  products Product[]
+}
+
+model AgeGroup {
+  id         String            @id @default(uuid()) @db.Uuid
+  rangeLabel String
+  products   ProductAgeGroup[]
+}
+
+model Skill {
+  id       String         @id @default(uuid()) @db.Uuid
+  name     String
+  products ProductSkill[]
+}
+
+model Product {
+  id                  String        @id @default(uuid()) @db.Uuid
+  name                String
+  slug                String        @unique
+  description         String        @db.Text
+  shortDescription    String        @db.Text
+  categoryId          String        @db.Uuid
+  brandId             String?       @db.Uuid
+  status              ProductStatus @default(DRAFT)
+  material            String
+  origin              String
+  recommendedAge      String
+  smallPartsWarning   Boolean       @default(false)
+  chokingHazard       Boolean       @default(false)
+  supervisionRequired Boolean       @default(false)
+  materialSafety      String?       @db.Text
+  safetyInstructions  String?       @db.Text
+  isFeatured          Boolean       @default(false)
+  isBestSeller        Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  category      Category          @relation(fields: [categoryId], references: [id])
+  brand         Brand?            @relation(fields: [brandId], references: [id])
+  variants      ProductVariant[]
+  media         ProductMedia[]
+  ageGroups     ProductAgeGroup[]
+  skills        ProductSkill[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  reviews       Review[]
+  wishlistItems WishlistItem[]
+  coupons       CouponProduct[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model ProductVariant {
+  id            String   @id @default(uuid()) @db.Uuid
+  productId     String   @db.Uuid
+  sku           String   @unique
+  title         String
+  price         Decimal  @db.Decimal(10, 2)
+  discountPrice Decimal? @db.Decimal(10, 2)
+  weight        Decimal  @db.Decimal(8, 2)
+  dimensions    String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory  Inventory?
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([sku])
+  @@index([productId])
+}
+
+model ProductMedia {
+  id        String    @id @default(uuid()) @db.Uuid
+  productId String    @db.Uuid
+  type      MediaType @default(IMAGE)
+  url       String
+  altText   String?
+  sortOrder Int       @default(0)
+  isPrimary Boolean   @default(false)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductAgeGroup {
+  productId  String   @db.Uuid
+  ageGroupId String   @db.Uuid
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ageGroup   AgeGroup @relation(fields: [ageGroupId], references: [id], onDelete: Cascade)
+
+  @@id([productId, ageGroupId])
+}
+
+model ProductSkill {
+  productId String  @db.Uuid
+  skillId   String  @db.Uuid
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  skill     Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([productId, skillId])
+}
+
+model Inventory {
+  variantId         String   @id @db.Uuid // variantId is PK and FK
+  quantity          Int      @default(0)
+  reservedQuantity  Int      @default(0)
+  lowStockThreshold Int      @default(5)
+  updatedAt         DateTime @updatedAt
+
+  variant      ProductVariant         @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  reservations InventoryReservation[]
+}
+
+model InventoryReservation {
+  id         String                     @id @default(uuid()) @db.Uuid
+  variantId  String                     @db.Uuid
+  orderId    String?                    @db.Uuid
+  quantity   Int
+  status     InventoryReservationStatus @default(ACTIVE)
+  expiresAt  DateTime
+  createdAt  DateTime                   @default(now())
+  releasedAt DateTime?
+
+  inventory Inventory @relation(fields: [variantId], references: [variantId], onDelete: Cascade)
+}
+
+model Cart {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @db.Uuid
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  cartId    String   @db.Uuid
+  productId String   @db.Uuid
+  variantId String   @db.Uuid
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id])
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+}
+
+model Order {
+  id                      String        @id @default(uuid()) @db.Uuid
+  orderNumber             String        @unique
+  customerId              String        @db.Uuid
+  status                  OrderStatus   @default(PENDING)
+  paymentStatus           PaymentStatus @default(PENDING)
+  fulfillmentStatus       String?
+  couponId                String?       @db.Uuid
+  subtotal                Decimal       @db.Decimal(10, 2)
+  discount                Decimal       @default(0) @db.Decimal(10, 2)
+  deliveryCharge          Decimal       @db.Decimal(10, 2)
+  total                   Decimal       @db.Decimal(10, 2)
+  codAmount               Decimal       @default(0) @db.Decimal(10, 2)
+  shippingAddressSnapshot Json
+  billingAddressSnapshot  Json
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  customer       User                 @relation(fields: [customerId], references: [id])
+  items          OrderItem[]
+  statusHistory  OrderStatusHistory[]
+  payments       Payment[]
+  shipment       Shipment?
+  returns        Return[]
+  refunds        Refund[]
+  verifications  OrderVerification[]
+  riskAssessment RiskAssessment?
+  couponUsages   CouponUsage[]
+  RTO            RTO[]
+
+  @@index([orderNumber])
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id                   String  @id @default(uuid()) @db.Uuid
+  orderId              String  @db.Uuid
+  productId            String  @db.Uuid
+  variantId            String  @db.Uuid
+  productNameSnapshot  String
+  variantTitleSnapshot String
+  skuSnapshot          String
+  unitPrice            Decimal @db.Decimal(10, 2)
+  quantity             Int
+  returnedQuantity     Int     @default(0)
+  discount             Decimal @default(0) @db.Decimal(10, 2)
+  subtotal             Decimal @db.Decimal(10, 2)
+
+  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product        @relation(fields: [productId], references: [id])
+  variant     ProductVariant @relation(fields: [variantId], references: [id])
+  returnItems ReturnItem[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+model OrderStatusHistory {
+  id         String       @id @default(uuid()) @db.Uuid
+  orderId    String       @db.Uuid
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  reason     String?
+  changedBy  String?      @db.Uuid
+  createdAt  DateTime     @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model RiskAssessment {
+  id        String    @id @default(uuid()) @db.Uuid
+  orderId   String    @unique @db.Uuid
+  score     Int
+  level     RiskLevel
+  signals   Json
+  reasons   Json
+  action    String
+  createdAt DateTime  @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model OrderVerification {
+  id         String                  @id @default(uuid()) @db.Uuid
+  orderId    String                  @db.Uuid
+  type       OrderVerificationType
+  status     OrderVerificationStatus @default(PENDING)
+  attempts   Int                     @default(0)
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  createdAt  DateTime                @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id        String        @id @default(uuid()) @db.Uuid
+  orderId   String        @db.Uuid // Intentionally no @unique for retry support
+  provider  String
+  status    PaymentStatus @default(PENDING)
+  amount    Decimal       @db.Decimal(10, 2)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  order        Order                @relation(fields: [orderId], references: [id])
+  transactions PaymentTransaction[]
+
+  @@index([orderId])
+}
+
+model PaymentTransaction {
+  id                    String        @id @default(uuid()) @db.Uuid
+  paymentId             String        @db.Uuid
+  provider              String
+  externalTransactionId String?
+  amount                Decimal       @db.Decimal(10, 2)
+  status                PaymentStatus
+  rawReference          Json?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([externalTransactionId])
+}
+
+model PaymentWebhookEvent {
+  id              String    @id @default(uuid()) @db.Uuid
+  provider        String
+  externalEventId String
+  eventType       String
+  payload         Json
+  signature       String
+  processed       Boolean   @default(false)
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([externalEventId, provider])
+}
+
+model Courier {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  code       String   @unique
+  status     String   @default("ACTIVE")
+  apiBaseUrl String?
+  config     Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  shipments Shipment[]
+}
+
+model Shipment {
+  id           String         @id @default(uuid()) @db.Uuid
+  orderId      String         @unique @db.Uuid
+  courierId    String         @db.Uuid
+  trackingId   String         @unique
+  status       ShipmentStatus @default(PENDING)
+  weight       Decimal        @db.Decimal(8, 2)
+  codAmount    Decimal        @db.Decimal(10, 2)
+  shippingCost Decimal        @db.Decimal(10, 2)
+  shippedAt    DateTime?
+  deliveredAt  DateTime?
+  returnedAt   DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  order   Order           @relation(fields: [orderId], references: [id])
+  courier Courier         @relation(fields: [courierId], references: [id])
+  events  ShipmentEvent[]
+  rtos    RTO[]
+
+  @@index([trackingId])
+  @@index([orderId])
+  @@index([courierId])
+}
+
+model ShipmentEvent {
+  id             String         @id @default(uuid()) @db.Uuid
+  shipmentId     String         @db.Uuid
+  status         ShipmentStatus
+  externalStatus String
+  location       String?
+  description    String?
+  occurredAt     DateTime
+  createdAt      DateTime       @default(now())
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+}
+
+model RTO {
+  id         String    @id @default(uuid()) @db.Uuid
+  orderId    String    @db.Uuid
+  shipmentId String    @db.Uuid
+  reason     RTOReason
+  notes      String?   @db.Text
+  createdAt  DateTime  @default(now())
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+}
+
+model Return {
+  id          String       @id @default(uuid()) @db.Uuid
+  orderId     String       @db.Uuid
+  customerId  String       @db.Uuid
+  reason      ReturnReason
+  description String?      @db.Text
+  status      ReturnStatus @default(REQUESTED)
+  requestedAt DateTime     @default(now())
+  approvedAt  DateTime?
+  receivedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  order    Order            @relation(fields: [orderId], references: [id])
+  items    ReturnItem[]
+  evidence ReturnEvidence[]
+
+  @@index([orderId])
+  @@index([customerId])
+}
+
+model ReturnItem {
+  id          String       @id @default(uuid()) @db.Uuid
+  returnId    String       @db.Uuid
+  orderItemId String       @db.Uuid
+  quantity    Int
+  reason      ReturnReason
+
+  returnRec Return    @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+}
+
+model ReturnEvidence {
+  id        String    @id @default(uuid()) @db.Uuid
+  returnId  String    @db.Uuid
+  type      MediaType
+  url       String
+  createdAt DateTime  @default(now())
+
+  returnRec Return @relation(fields: [returnId], references: [id], onDelete: Cascade)
+}
+
+model Refund {
+  id            String       @id @default(uuid()) @db.Uuid
+  returnId      String?      @db.Uuid
+  orderId       String       @db.Uuid
+  amount        Decimal      @db.Decimal(10, 2)
+  method        String
+  status        RefundStatus @default(PENDING)
+  reason        String?
+  transactionId String?
+  processedAt   DateTime?
+  createdAt     DateTime     @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model Coupon {
+  id                 String     @id @default(uuid()) @db.Uuid
+  code               String     @unique
+  type               CouponType
+  value              Decimal    @db.Decimal(10, 2)
+  minimumOrderAmount Decimal?   @db.Decimal(10, 2)
+  maximumDiscount    Decimal?   @db.Decimal(10, 2)
+  usageLimit         Int?
+  perUserLimit       Int?
+  isActive           Boolean    @default(true)
+  startDate          DateTime
+  endDate            DateTime
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  usages     CouponUsage[]
+  products   CouponProduct[]
+  categories CouponCategory[]
+}
+
+model CouponUsage {
+  id             String   @id @default(uuid()) @db.Uuid
+  couponId       String   @db.Uuid
+  userId         String   @db.Uuid
+  orderId        String   @db.Uuid
+  discountAmount Decimal  @db.Decimal(10, 2)
+  createdAt      DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+  order  Order  @relation(fields: [orderId], references: [id])
+
+  @@unique([couponId, orderId])
+  @@index([couponId, userId, orderId])
+}
+
+model CouponProduct {
+  couponId  String  @db.Uuid
+  productId String  @db.Uuid
+  coupon    Coupon  @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([couponId, productId])
+}
+
+model CouponCategory {
+  couponId   String   @db.Uuid
+  categoryId String   @db.Uuid
+  coupon     Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([couponId, categoryId])
+}
+
+model Review {
+  id               String       @id @default(uuid()) @db.Uuid
+  productId        String       @db.Uuid
+  customerId       String       @db.Uuid
+  orderId          String       @db.Uuid
+  rating           Int
+  title            String?
+  comment          String       @db.Text
+  verifiedPurchase Boolean      @default(false)
+  status           ReviewStatus @default(PENDING)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  product  Product       @relation(fields: [productId], references: [id])
+  customer User          @relation(fields: [customerId], references: [id])
+  media    ReviewMedia[]
+
+  @@unique([customerId, productId, orderId])
+  @@index([productId, customerId])
+}
+
+model ReviewMedia {
+  id        String    @id @default(uuid()) @db.Uuid
+  reviewId  String    @db.Uuid
+  type      MediaType
+  url       String
+  createdAt DateTime  @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  action    String
+  entity    String
+  entityId  String
+  oldValue  Json?
+  newValue  Json?
+  ip        String
+  userAgent String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model IdempotencyKey {
+  id             String   @id @default(uuid()) @db.Uuid
+  key            String   @unique
+  userId         String?  @db.Uuid
+  endpoint       String
+  requestHash    String
+  responseStatus Int?
+  responseBody   Json?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([key, userId])
+}
+
+model Wishlist {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items WishlistItem[]
+
+  @@index([userId])
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid()) @db.Uuid
+  wishlistId String   @db.Uuid
+  productId  String   @db.Uuid
+  addedAt    DateTime @default(now())
+
+  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, productId])
+  @@index([wishlistId, productId])
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  channel   String
+  type      String
+  title     String
+  body      String    @db.Text
+  metadata  Json?
+  sentAt    DateTime?
+  readAt    DateTime?
+  status    String    @default("PENDING")
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, status])
+}
+
+model Promotion {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  type        String
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  metadata    Json?
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug, isActive, startDate, endDate])
+}
+
+model CODConfig {
+  id                       String   @id @default(uuid()) @db.Uuid
+  minimumOrderAmount       Decimal  @default(0) @db.Decimal(10, 2)
+  maximumCODAmount         Decimal  @db.Decimal(10, 2)
+  riskThresholdLow         Int      @default(29)
+  riskThresholdMedium      Int      @default(69)
+  advancePaymentPercentage Decimal  @default(20) @db.Decimal(5, 2)
+  codVerificationRequired  Boolean  @default(true)
+  updatedBy                String?  @db.Uuid
+  updatedAt                DateTime @updatedAt
+}
+
+model Article {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String
+  slug        String   @unique
+  summary     String?  @db.Text
+  content     String?  @db.Text
+  image       String?
+  category    String   @default("Parenting Guide")
+  readTime    String   @default("4 min read")
+  isPublished Boolean  @default(true)
+  author      String?  @default("KiddyBD Team")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug, isPublished, createdAt])
+}
