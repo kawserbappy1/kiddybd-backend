@@ -33,7 +33,9 @@ import { globalRateLimiter, xssSanitizer } from './middlewares/security.middlewa
 
 // Security middlewares
 app.use(helmet({
-  contentSecurityPolicy: true,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  contentSecurityPolicy: false,
   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
   noSniff: true,
   xssFilter: true,
