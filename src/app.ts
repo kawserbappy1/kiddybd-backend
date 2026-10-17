@@ -80,6 +80,7 @@ app.use(requestLogger);
 // Routes
 app.use('/health', healthRouter);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1', settingsRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1', catalogRoutes);
 app.use('/api/v1/cart', cartRoutes);
@@ -97,12 +98,23 @@ app.use('/api/v1', reviewRoutes);
 app.use('/api/v1', couponRoutes);
 app.use('/api/v1', wishlistRoutes);
 app.use('/api/v1', notificationRoutes);
-app.use('/api/v1', settingsRoutes);
 
 app.get('/', (req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'Welcome to the KiddyBD API',
+  });
+});
+
+// Explicit 404 handler for unmatched API routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Cannot ${req.method} ${req.originalUrl}`,
+    error: {
+      code: 'NOT_FOUND',
+      details: [`The requested route ${req.originalUrl} does not exist on this server.`],
+    },
   });
 });
 

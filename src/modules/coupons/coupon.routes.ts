@@ -8,6 +8,8 @@ const router = Router();
 // Public Routes
 router.get('/promotions', couponController.getActivePromotions);
 router.get('/coupons/banner', couponController.getBannerCoupon);
+router.get('/coupons/active-status', couponController.checkActiveCoupons);
+router.post('/coupons/apply', couponController.applyCoupon);
 
 // Customer Routes
 router.post('/coupons/validate', authenticate, couponController.validateCoupon);

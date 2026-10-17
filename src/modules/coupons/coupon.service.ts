@@ -139,6 +139,18 @@ export class CouponService {
     };
   }
 
+  async hasActiveCoupons(): Promise<boolean> {
+    const now = new Date();
+    const count = await prisma.coupon.count({
+      where: {
+        isActive: true,
+        startDate: { lte: now },
+        endDate: { gte: now },
+      },
+    });
+    return count > 0;
+  }
+
   async createCoupon(dto: any) {
     const code = String(dto.code || '').trim().toUpperCase();
     if (!code) {
